@@ -13,9 +13,6 @@ export class DigiapiService {
 
 
   async getDigimon(endpoint: string, baseUrl?: string) {
-    await this.redis.set('test-key', 'it works', 'EX', 60);
-    const value = await this.redis.get('test-key');
-    console.log('Redis test value:', value);
     const cacheKey = `digiapi:${endpoint}`;
     const cached = await this.redis.get(cacheKey);
     if (cached) {
