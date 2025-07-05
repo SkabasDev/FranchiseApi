@@ -1,6 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
+import Redis from 'ioredis';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RequestLog } from '~/infrastructure/models/request-log.model';
 import { Repository } from 'typeorm';
@@ -12,7 +11,7 @@ export class FranchiseService {
     @InjectRepository(RequestLog)
     private readonly requestLogRepository: Repository<RequestLog>,
     private readonly context: FranchiseContextService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    @Inject('REDIS_CLIENT') private readonly redis: Redis,
   ) {}
 
   async getFranchiseData(franchise: string, version: string, metadata: any, config: any) {
@@ -31,7 +30,7 @@ export class FranchiseService {
     } finally {
       // Evitar registros duplicados en la base de datos usando cache
       const logKey = `log:${franchise}:${version}:${JSON.stringify(metadata)}`;
-      if (!(await this.cacheManager.get(logKey))) {
+      if (!(await this.redis.get(logKey))) {
         const requestLog = new RequestLog();
         requestLog.franchise = franchise;
         requestLog.version = version;
@@ -40,7 +39,7 @@ export class FranchiseService {
         requestLog.status = status;
         requestLog.error_message = error_message ?? "";
         await this.requestLogRepository.save(requestLog);
-        await this.cacheManager.set(logKey, true, 60 * 60);
+        await this.redis.set(logKey, '1', 'EX', 60 * 60);
       }
     }
   }

@@ -10,6 +10,6 @@ export default new DataSource({
   username: process.env.POSTGRES_USER,
   password: process.env.POSTGRES_PASSWORD,
   database: process.env.POSTGRES_DB,
-  migrations: ['dist/migration/*.js'],
-  entities: [__dirname + '/models/*.model.{js,ts}'],
+  migrations: ['dist/infrastructure/migration/*.js'],
+  entities: [__dirname + '/infrastructure/models/*.model.{js,ts}'],
 });

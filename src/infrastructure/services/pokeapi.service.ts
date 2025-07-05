@@ -1,23 +1,22 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
 import axios from 'axios';
 import { PokeApiSpeciesResponse, PokeApiEvoChainResponse, PokeApiResponse } from '~/interfaces/external/pokeapi-response.interface';
+import Redis from 'ioredis';
 
 @Injectable()
 export class PokeapiService {
   private readonly logger = new Logger(PokeapiService.name);
 
   constructor(
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    @Inject('REDIS_CLIENT') private readonly redis: Redis,
   ) {}
 
   async getPokemon(endpoint: string, baseUrl?: string) {
     const cacheKey = `pokeapi:${endpoint}`;
-    const cached = await this.cacheManager.get(cacheKey);
+    const cached = await this.redis.get(cacheKey);
     if (cached) {
       this.logger.log(`Cache hit for ${cacheKey}`);
-      return cached;
+      return JSON.parse(cached);
     }
     try {
       const url = `${baseUrl || 'https://pokeapi.co/api/v2'}/${endpoint}`;
@@ -44,14 +43,17 @@ export class PokeapiService {
           this.logger.warn('Could not fetch evolutions', e);
           evolutions = [];
         }
-        return {
+        const result = {
           name: pokemonData.name,
           weight: pokemonData.weight,
           powers: pokemonData.types.map((t: any) => t.type.name),
           evolutions
         };
+        await this.redis.set(cacheKey, JSON.stringify(result), 'EX', 3600);
+        return result;
       }
       // Para otros endpoints, retorna el resultado crudo
+      await this.redis.set(cacheKey, JSON.stringify(response.data), 'EX', 3600);
       return response.data;
     } catch (error) {
       this.logger.error('Error fetching Pokemon data', error);

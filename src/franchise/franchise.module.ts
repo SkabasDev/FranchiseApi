@@ -9,8 +9,11 @@ import { PokemonStrategy } from './strategies/pokemon.strategy';
 import { DigimonStrategy } from './strategies/digimon.strategy';
 import { FranchiseContextService } from './strategies/franchise-context.service';
 
+import { RedisModule } from '../redis.module';
+
 @Module({
-  imports: [TypeOrmModule.forFeature([RequestLog])],
+  imports: [
+    RedisModule,TypeOrmModule.forFeature([RequestLog])],
   controllers: [FranchiseController],
   providers: [
     FranchiseService,
