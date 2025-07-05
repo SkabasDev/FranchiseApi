@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { RequestLog } from '~/infrastructure/models/request-log.model';
 import { Repository } from 'typeorm';
 import { FranchiseContextService } from './strategies/franchise-context.service';
+import { ApiStatus } from '~/common/constants/api-status.enum';
 
 @Injectable()
 export class FranchiseService {
@@ -15,12 +16,12 @@ export class FranchiseService {
   ) {}
 
   async getFranchiseData(franchise: string, version: string, metadata: any, config: any, metadataError?: string) {
-    let status = 'success';
+    let status = ApiStatus.SUCCESS;
     let error_message: string | null = null;
     let response: any = null;
 
     if (metadataError) {
-      status = 'error';
+      status = ApiStatus.ERROR;
       error_message = metadataError;
       const logKey = `log:${franchise}:${version}:${JSON.stringify(metadata)}`;
       if (!(await this.redis.get(logKey))) {
@@ -42,7 +43,7 @@ export class FranchiseService {
       response = await strategy.getData(metadata, config);
       return response;
     } catch (error) {
-      status = 'error';
+      status = ApiStatus.ERROR;
       error_message = error?.response?.data?.message || error.message || 'Unknown error';
       return { message: 'External API error', details: error_message };
     } finally {

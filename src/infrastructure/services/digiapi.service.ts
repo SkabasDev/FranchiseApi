@@ -36,7 +36,7 @@ export class DigiapiService {
       return JSON.parse(cached);
     }
     try {
-      const url = `https://digi-api.com/api/v1/${endpoint}`;
+      const url = `${process.env.DIGIAPI_BASE_URL}/${endpoint}`;
       this.logger.log(`Requesting DigiAPI endpoint: ${url}`);
       const response = await axios.get(url);
       const data = response.data;

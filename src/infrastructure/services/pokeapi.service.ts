@@ -36,7 +36,7 @@ export class PokeapiService {
       return JSON.parse(cached);
     }
     try {
-      const url = `https://pokeapi.co/api/v2/${endpoint}`;
+      const url = `${process.env.POKEAPI_BASE_URL}/${endpoint}`;
       this.logger.log(`Requesting Pokemon API endpoint: ${url}`);
       const response = await axios.get(url);
       const data = response.data;
