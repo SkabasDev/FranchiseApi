@@ -5,6 +5,9 @@ import Redis from 'ioredis';
 
 @Injectable()
 export class DigiapiService {
+  private isDigiApiDigimon(data: any): data is DigiApiResponse {
+    return (data && typeof data === 'object' && 'name' in data);
+  }
   private readonly logger = new Logger(DigiapiService.name);
 
   constructor(
@@ -12,7 +15,20 @@ export class DigiapiService {
   ) {}
 
 
-  async getDigimon(endpoint: string, baseUrl?: string) {
+  private buildDigiApiEndpoint(metadata: Record<string, any>): string {
+    if (metadata.name) {
+      return `digimon/${metadata.name}`;
+    }
+    const keys = Object.keys(metadata);
+    if (keys.length > 0) {
+      const key = keys[0];
+      return `${key}/${metadata[key]}`;
+    }
+    throw new Error('No endpoint or parameter provided for DigiAPI');
+  }
+
+  async getDigimon(metadata: Record<string, any>) {
+    const endpoint = this.buildDigiApiEndpoint(metadata);
     const cacheKey = `digiapi:${endpoint}`;
     const cached = await this.redis.get(cacheKey);
     if (cached) {
@@ -20,24 +36,23 @@ export class DigiapiService {
       return JSON.parse(cached);
     }
     try {
-      const url = `${baseUrl || 'https://digi-api.com/api/v1'}/${endpoint}`;
+      const url = `https://digi-api.com/api/v1/${endpoint}`;
       this.logger.log(`Requesting DigiAPI endpoint: ${url}`);
       const response = await axios.get(url);
-      // Si el endpoint es 'digimon/<id>' se puede mapear como antes
-      if (endpoint.startsWith('digimon/')) {
-        const digimon = response.data as DigiApiResponse;
+      const data = response.data;
+
+      if (this.isDigiApiDigimon(data)) {
         const result = {
-          name: digimon.name,
+          name: data.name,
           weight: undefined,
-          powers: (digimon.levels || []).map((l) => l.level),
-          evolutions: (digimon.nextEvolutions || []).map((e) => e.digimon)
+          powers: (data.levels || []).map((l) => l.level),
+          evolutions: (data.nextEvolutions || []).map((e) => e.digimon)
         };
         await this.redis.set(cacheKey, JSON.stringify(result), 'EX', 3600);
         return result;
       }
-      // Para otros endpoints, retorna el resultado crudo
-      await this.redis.set(cacheKey, JSON.stringify(response.data), 'EX', 3600);
-      return response.data;
+      await this.redis.set(cacheKey, JSON.stringify(data), 'EX', 3600);
+      return data;
     } catch (error) {
       this.logger.error('Error fetching Digimon data', error);
       throw error;

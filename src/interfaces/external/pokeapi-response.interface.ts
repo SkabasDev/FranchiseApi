@@ -6,6 +6,14 @@ export interface PokeApiSpecies {
   url: string;
 }
 
+export interface PokeApiPokemon {
+  name: string;
+  weight: number;
+  types: any[];
+  species: { url: string };
+}
+
+
 export interface PokeApiResponse {
   name: string;
   weight: number;

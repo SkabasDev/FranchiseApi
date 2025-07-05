@@ -6,12 +6,7 @@ import { DigiapiService } from '../../infrastructure/services/digiapi.service';
 export class DigimonStrategy implements FranchiseStrategy {
   constructor(private readonly digiapi: DigiapiService) {}
 
-  async getData(metadata: any, config: any): Promise<any> {
-    let endpoint = metadata.endpoint;
-    if (!endpoint && metadata.name) {
-      endpoint = `digimon/${metadata.name}`;
-    }
-    if (!endpoint) throw new Error('No endpoint or name provided for Digimon');
-    return this.digiapi.getDigimon(endpoint, config?.baseUrl);
+  async getData(metadata: any): Promise<any> {
+    return this.digiapi.getDigimon(metadata);
   }
 }

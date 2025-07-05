@@ -22,7 +22,6 @@ export class FranchiseService {
     if (metadataError) {
       status = 'error';
       error_message = metadataError;
-      // Loguear el error en la base de datos
       const logKey = `log:${franchise}:${version}:${JSON.stringify(metadata)}`;
       if (!(await this.redis.get(logKey))) {
         const requestLog = new RequestLog();
@@ -39,17 +38,14 @@ export class FranchiseService {
     }
 
     try {
-      // Delegar la lógica de obtención de datos a la estrategia adecuada
       const strategy = this.context.getStrategy(franchise);
       response = await strategy.getData(metadata, config);
       return response;
     } catch (error) {
       status = 'error';
       error_message = error?.response?.data?.message || error.message || 'Unknown error';
-      // Responder con mensaje y detalles
       return { message: 'External API error', details: error_message };
     } finally {
-      // Evitar registros duplicados en la base de datos usando cache
       const logKey = `log:${franchise}:${version}:${JSON.stringify(metadata)}`;
       if (!(await this.redis.get(logKey))) {
         const requestLog = new RequestLog();
